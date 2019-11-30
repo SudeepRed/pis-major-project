@@ -1,0 +1,78 @@
+
+#include <SoftwareSerial.h> //default library
+#include <Wire.h> //default library
+
+int Incomingch;
+String data,Fdata;
+
+ //Connect Tx pin of GSM to 9 of Arduino
+//Connect Rx pin of GSM to 10 of Arduino
+SoftwareSerial gprs(3,2);//TX,RX
+
+
+void setup(){
+  Serial.begin(9600); //Serial monitor works on 9600 baudrate for debugging
+  gprs.begin(9600);
+  pinMode(12, INPUT);
+  pinMode(10, INPUT);//pin to turn on Voice
+  Serial.println("Arduino - Automatic Voice Machine");
+  gprs.println("AT");
+  delay(1000);
+  //gprs.println("AT+CLIP=1");
+}
+
+/*Function to read Incoming data from GSM to Arduino*/
+void check_Incoming()
+{
+    if(gprs.available()) //If GSM is saying something
+    {
+   Incomingch = gprs.read(); // Listen to it and store in this variable
+  
+  if (Incomingch == 10 || Incomingch ==13) //If it says space (10) or Newline (13) it means it has completed one word
+  {Serial.println(data);  Fdata =data; data = ""; } //Print the word and clear the variable to start fresh
+  else
+  {
+  String newchar = String (char(Incomingch)); //convert the char to string by using string objects
+  data = data +newchar; // After converting to string, do string concatenation
+  }
+  }
+}
+/*##End of Function##*/
+
+void loop(){
+  
+   check_Incoming(); //Read what GSM module is saying
+  
+  if(Serial.available()){   //Used for debugging    
+    gprs.write(Serial.read());  //Used for debugging
+  } //Used for debugging
+  
+
+  if (Fdata == "RING") //If the GSM module says RING?m 
+  {
+  delay(600);
+  check_Incoming();
+  if(digitalRead(10)==1)
+  {
+    gprs.write ("ATH\r\n");
+    }
+  
+  if(digitalRead(12)==1){
+  gprs.write ("ATA\r\n");
+  while(Fdata!="NO CARRIER"){
+  Serial.println ("Placed Received");
+  check_Incoming();
+  if(digitalRead(10)==1)
+  {
+    gprs.write ("ATH\r\n");
+    break;
+    
+    }
+ 
+  }}
+  
+  }
+  
+}
+
+ 
